@@ -560,8 +560,5 @@ int main (int argc, char *argv[]) {
     // Terminate the machine
     scTerminateMachine();
 
+    return 0;
 }
-
-
-
-

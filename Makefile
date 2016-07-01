@@ -1,13 +1,38 @@
-LDLIBS = -lm
-#  -Wall -W -Werror
-CFLAGS = -O1
+LDLIBS = -L. -lm -lsingular
+CFLAGS = -O1 -Wall -W -Werror
+SINGULAR_CFLAGS = -O1 # cannot handle -Wall
 CPPFLAGS = -I..
-JOES_LIBRARIES = ../scNova.c ../scAcceleratorAPI.c ../scEmulator.c ../scArithmetic178.c ../pmbus.c
 default: matrixMultiplication simpleMat
-matrixMultiplication: matrixMultiplication.c $(JOES_LIBRARIES)
-simpleMat: simpleMat.c $(JOES_LIBRARIES)
+
+matrixMultiplication simpleMat: libsingular.a
+matrixMultiplication: matrixMultiplication.c
+simpleMat: simpleMat.c
+
+# Build the library containing the singular emulation.
+
+libsingular.a: \
+  libsingular.a(scNova.o) \
+  libsingular.a(scAcceleratorAPI.o) \
+  libsingular.a(scEmulator.o) \
+  libsingular.a(scArithmetic178.o) \
+  libsingular.a(pmbus.o) \
+  # This line intentionally left blank
+
+scNova.o: ../scNova.c
+	$(CC) $(SINGULAR_CFLAGS) -c -o $@ $<
+scAcceleratorAPI.o: ../scAcceleratorAPI.c
+	$(CC) $(SINGULAR_CFLAGS) -c -o $@ $<
+scEmulator.o: ../scEmulator.c
+	$(CC) $(SINGULAR_CFLAGS) -c -o $@ $<
+scArithmetic178.o: ../scArithmetic178.c
+	$(CC) $(SINGULAR_CFLAGS) -c -o $@ $<
+pmbus.o: ../pmbus.c
+	$(CC) $(SINGULAR_CFLAGS) -c -o $@ $<
+
 clean:
 	rm -f matrixMultiplication simpleMat
+reallyclean: clean
+	rm -rf libsingular.a scNova.o scAcceleratorAPI.o scEmulator.o scArithmetic178.o pmbus.o
 check: check_matrixMultiplication check_simpleMat
 check_matrixMultiplication: matrixMultiplication
 	./matrixMultiplication emulated 0

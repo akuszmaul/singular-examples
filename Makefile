@@ -3,7 +3,13 @@ LDFLAGS = -L.
 CFLAGS = -O1 -Wall -W -Werror
 SINGULAR_CFLAGS = -O1 # cannot handle -Wall
 CPPFLAGS = -I..
-default: matrixMultiplication simpleMat
+default: matrixMultiplication simpleMat mm.pdf
+
+mm.pdf: mm.tex mm-main.c
+	pdflatex -shell-escape mm
+
+matrixMultiplication: matrixMultiplication.c mm-main.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(LDLIBS) -o $@
 
 matrixMultiplication simpleMat: libsingular.a
 

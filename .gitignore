@@ -2,6 +2,12 @@
 matrixMultiplication
 simpleMat
 
+# Latex-generated files
+*.aux
+*.log
+*.pdf
+*.pyg
+
 # Compiled Object files
 *.slo
 *.lo

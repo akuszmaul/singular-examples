@@ -5,9 +5,202 @@
 \begin{document}
 \maketitle
 
-\section{main}
+\section{Outline}
+Below is the basic outline of the matrix multiplication code, with comments outlining what each function will do.  We will then look at sections of the complete code in depth, starting with the main function.
 
-Here is the main program.  
+\begin{minted}{c}
+/*********************************************************************************
+    (c) Copyright 2011-2016 Singular Computing LLC
+
+    This file and related materials are Confidential Information
+    and Proprietary Property of Singular Computing LLC.
+
+**********************************************************************************/
+
+
+/*
+
+Simple matrix multiplication example code for S1 using Nova.
+
+To compile: 
+gcc -lm -o matrixMultiplication matrixMultiplication.c scNova.c scAcceleratorAPI.c scEmulator.c scArithmetic178.c pmbus.c
+
+
+ We keep a matrix (A) stored persistently in the S1,
+ and multiply it with a temporary matrix (B), storing the result in A.
+
+  For this code, A and B have fixed, identical, square NxN shapes, where N=8.
+  Matrix elements are stored one per core.
+
+*/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <time.h>
+
+// Include the Singular Software libraries.
+#include "scAcceleratorAPI.h"
+#include "scNova.h"
+
+
+int emulated;                     // 1 for emulated machine.  0 for real S1 hardware.
+
+// If emulated, scTotalCyclesTake is the total number of cycles taken to run the last kernel.
+extern int scTotalCyclesTaken;
+
+// If emulated, *scEmulatedMachineState is a pointer to the emulated machine's state.
+extern MachineState *scEmulatedMachineState;  
+
+extern LLKernel *llKernel;
+
+// Variables for the size info of the machine.
+int chipRows;
+int chipCols;
+int apeRows;
+int apeCols;
+
+int traceFlags;
+
+// Define the length of the square matrices.
+#define N 8
+
+// Declare space for matrices A and B on the CPU, in float format.
+float floatA[N][N];
+float floatB[N][N];
+
+// Declare space for a matrix on the CPU, in approx format (16 bits), aligned at 64 bits.
+uint64_t approxM[(N*N)/4];
+
+// Declare often used Nova Constants.
+Declare(a0);
+Declare(a1);
+
+// Declare names of A and B matrices in Ape memory.
+Declare(A);
+Declare(B);
+
+void defineNames () {
+// Initialization routine to define the names above.
+a0 = AConst(0);
+a1 = AConst(1);
+ApeMem(A, Approx);
+ApeMem(B, Approx);
+}
+
+void emitCopyMatrixFromCUToApes(int cuAddress, int apeAddress) {
+    // Copy N*N 16 bit data words
+    // from CU Data Memory starting at cuAddress to the Ape grid.
+}
+
+void emitCopyMatrixFromApesToCU(int apeAddress, int cuAddress) {
+    // Copy N*N 16 bit data words
+    // from the Ape grid to CU Data Memory starting at cuAddress.
+}
+
+void copyBToCU () {
+    // Convert floatB to approx and copy to matrix B in CU Data Memory
+}
+
+void copyAFromCU () {
+    // Copy matrix A in CU Data Memory to floatA in the CPU (and convert from approx to
+// float).
+
+}
+
+void emitMatrixSet () {
+    // Make matrix A equal to matrix B.
+Set(A, B);
+}
+
+
+void emitGetTorus(scExpr x, int dir){
+    // This function is similar to getApe() in Nova.h.  However, getApe() is not set up for
+    // a torus configuration, and this function is.
+}
+
+void emitMatrixMul () {
+    // Emit code for matrix multiply:  A = A * B.
+    // Steps:
+    // 1) Order the apes by row and column number.
+    // 2) Do the initial shifting of the rows of matrix A and columns of matrix B.
+    // 3) Multiply the A and B element in each Ape, save the result, shift the matrices, and
+// repeat until the matrices are finished multiplying.
+}
+
+
+void check (char *testname, int i, int j, float expected) {
+    // Checks if floatA[i][j] is close to expected, and prints an error otherwise.
+}
+
+
+void tests () {
+    // Runs the matrix multiplication and check that it works.
+    // We do this by emitting instructions into a kernel and then executing the kernel.
+    // Steps:
+    // 1) Kernel instruction: Copy B from CU to Apes.
+// 2) Kernel instruction: Sets A = B
+// 3) Kernel instruction: Run the matrix multiplication.  A = A * B.
+// 4) Kernel instruction: Copy A from Apes to CU, and wait for CU to say to continue.
+    // 5) Check to see if the matrix multiplication is correct.
+    // 6) Execute the kernel.
+
+
+}
+int main (int argc, char *argv[]) {
+    // Process the command line arguments, create a machine, and run the
+    // tests for the matrix multiplication.
+}
+\end{minted}
+
+This matrix multiplication code will not run on the real Singular Computing machine, because it’s coded for a torus neural network, which the real machine is not.  However, later on we will code the real machine to work as a torus in such a way that the programmer does not need to know that the real machine’s hardware isn’t set up that way.  So, later this code may be able to be minimally modified and it will run on the real machine. \par  
+In order to run this code, there are three command line arguments: \par
+\begin{enumerate}
+\item The name of the file to be compiled.  
+\item Whether the code should be run on the real machine or the emulated machine. \item What trace flags to show.
+\end{enumerate}
+The command should look like, “./matrixMultiplication emulated 0”.  For now it’s always going to be emulated, but the trace flags used can be changed to give you different information about what’s happening within the machine as the code runs. \par
+    First, let’s look at the main function:
 
 \inputminted{c}{mm-main.c}
+
+Here I should put some more info about each Trace Flag option. \par
+
+Next, let’s look at emitCopyMatrixFromCUToApes(int cuAddress, int apeAddress):
+
+\inputminted{c}{mm-emitCopyMatrixFromCUToApes.c}
+
+Next, let’s look at emitCopyMatrixFromApesToCU(int apeAddress, int cuAddress), which is very similar to the previous function in reverse.
+
+\inputminted{c}{mm-emitCopyMatrixFromApesToCU.c}
+
+We’re getting close to the actual matrix multiplication function.  Let’s just take a quick glance at the emitGetTorus function first.  This function allows us to specify an ape variable (such as matrix A) and a direction (such as South).  In that example, every ape is directed to replace their own matrix A value with the value of matrix A from the ape South of them.  The bottom row of apes will circularly take the value from the top row.  There is an apeGet function in that works almost the same, only it does not allow for a torus configuration.  If apeGet is used and given the direction South, the bottom row of apes will all reach off the grid and come back with zeros, instead of the values in the top row.
+
+\inputminted{c}{mm-emitGetTorus.c}
+
+Now let’s look at the matrix multiplication function.  First, we have to understand how matrix multiplication works with a network.  The following algorithm is gotten from Cypher and Sanz Chapter 5.6. \par
+We want to multiply each row value of matrix A with the corresponding column value of matrix B.  Example: \par
+\begin{tabular}{l*{13}{c}r}
+  & & & Matrix A & & & & & & & & Matrix B & \\
+  \\
+  & &
+  \textit{Column 0} &
+  \textit{Column 1} &
+  \textit{Column 2} & & & & & &
+  \textit{Column 0} &
+  \textit{Column 1} &
+  \textit{Column 2}\\
+  \\
+  \textit{Row 0} & & A & B & C & & & & & & J & K & L \\
+  \\
+  \textit{Row 1} & & D & E & F & & & & & & M & N & O \\
+  \\
+  \textit{Row 2} & & G & H & I & & & & & & P & Q & R\\
+  \end{tabular}
+  
+
 \end{document}

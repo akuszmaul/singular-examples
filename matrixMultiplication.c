@@ -84,86 +84,9 @@ void defineNames () {
     ApeMem(B, Approx);
 }
 
-void emitCopyMatrixFromCUToApes(int cuAddress, int apeAddress) {
-    // Copies N*N 16 bit data words from CU Data Memory starting at
-    // cuAddress to the Ape grid, in Ape[0..N-1, 0..N-1]Mem[apeAddress].
+#include "mm-emitCopyMatrixFromCUToApes.c"
 
-    // Sets the Chip row and column to zero.
-    eCUC(cuSet, cuRChipRow, _, 0);
-    eCUC(cuSet, cuRChipCol, _, 0);
-
-    // Sets the location in CU memory.
-    eCUX(cuSetRWAddress, _, _, cuAddress);
-
-    // CUFor is different from a C for loop, because it is only one
-    // instruction.  The CU will simply continue to reread that instruction
-    // a certain number of times.  In a C for loop, the distinction is that
-    // the same instruction is given multiple times, rather than simply
-    // reread.  A C for loop is better if the instruction is only being given
-    // a few times (few being relative).  However, if the loop is gone
-    // through many times, a C for loop will take up all the instruction memory.
-
-    // HELP: cuRApeRow, cuRapeCol, cuRChipRow, etc. - how does this work?
-
-    // This CUFor loops through each Ape row between 0 and N-1,
-    // incrementing up by 1 each time.
-    int col;
-    CUFor(cuRApeRow, IntConst(0), IntConst(N-1), IntConst(1));
-    
-    // Sets the Ape column to 0, then loops through each column
-    // with a C for loop.
-    eCUC(cuSet, cuRApeCol, _, 0);
-    for (col=0; col<N; col++) {
-        // Incrementing the Ape column number, it takes what’s at that Ape
-        // address and writes it into the CU memory. HELP - don’t fully
-        // understand.
-        eCUC(cuWrite, _, rwIgnoreMasks|rwUseCUMemory|rwIncApeCol,
-             apeAddress);
-    }
-    CUForEnd();
-} // End emitCopyMatrixFromCUToApes.
-
-void emitCopyMatrixFromApesToCU(int apeAddress, int cuAddress) {
-    // Copies N*N 16 bit data words from the Ape grid, in
-    // Ape[0..N-1, 0..N-1]Mem[apeAddress], to CU Data Memory starting at
-    // cuAddress.
-    // This code uses CU register 11 (cuR11) and ape register zero (apeR0),
-    // destroying what was in those locations.
-
-    // Reserves apeR0 register for A matrix.
-    eControl(controlOpReserveApeReg,apeR0);
-
-    // Loads matrix from the apeAddress given into apeR0.
-    eApeC(apeLoad, apeR0, _, apeAddress);
-
-    // Reads the matrix into CU Data memory.
-    // First, sets the chip row and column to start at zero.
-    // HELP? Limited understanding of why this is necessary.
-    eCUC(cuSet, cuRChipRow, _, 0);
-    eCUC(cuSet, cuRChipCol, _, 0);
-
-    // Sets the location in memory to the given cuAddress.
-    eCUX(cuSetRWAddress, _, _, cuAddress);
-
-    // For every ape row, starting at row 0, working incrementally up
-    // until row N-1...
-    int col;
-    CUFor(cuRApeRow, IntConst(0), IntConst(N-1), IntConst(1));
-    // Starts at ape column zero, and works it’s way up the columns.
-    eCUC(cuSet, cuRApeCol, _, 0);
-    for (col=0; col<N; col++) {
-        int propDelay = 4;  // This delay allows the CU enough time to
-        // complete its previous command.
-        // The cu reads each ape register 0 into its data memory.
-        eCUC(cuRead, _, rwIgnoreMasks|rwUseCUMemory|rwIncApeCol,
-             (propDelay<<8)|apeR0);
-    }
-    CUForEnd();
-
-    // Releases apeR0.
-    eControl(controlOpReleaseApeReg,apeR0);
-
-} // End emitCopyMatrixFromApesToCU.
+#include "mm-emitCopyMatrixFromApesToCU.c"
 
 void copyBToCU () {
     // First, converts each value in the CPU’s B matrix of float values

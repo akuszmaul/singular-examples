@@ -184,7 +184,10 @@ We’re getting close to the actual matrix multiplication function.  Let’s jus
 
 Now let’s look at the matrix multiplication function.  First, we have to understand how matrix multiplication works with a network.  The following algorithm is gotten from Cypher and Sanz Chapter 5.6. \par
 We want to multiply each row value of matrix A with the corresponding column value of matrix B.  Example: \par
+
 \begin{tabular}{l*{13}{c}r}
+  \\
+  \\
   & & & Matrix A & & & & & & & & Matrix B & \\
   \\
   & &
@@ -200,7 +203,99 @@ We want to multiply each row value of matrix A with the corresponding column val
   \textit{Row 1} & & D & E & F & & & & & & M & N & O \\
   \\
   \textit{Row 2} & & G & H & I & & & & & & P & Q & R\\
-  \end{tabular}
+  \\
+  \\
+\end{tabular}
+
+Matrix A * Matrix B = Matrix C
+
+\begin{tabular}{l*{26}{c}r}
+  \\
+  \\
+  & & & & & & & & Matrix C\\
+  \\
+  & & & & &
+  \textit{Column 0} & & &
+  \textit{Column 1} & & &
+  \textit{Column 2} \\
+  \\
+  \textit{Row 0} & & & & &
+  AJ + BM + CP &&& AK + BN + CQ &&& AL + BO + CR \\
+  \\
+  \textit{Row 1} & & & & &
+  DJ + EM + FP &&& DK + EN + FQ &&& DL + EO + FR \\
+  \\
+  \textit{Row 2} & & & & &
+  GJ + HM + IP &&& GK + HN + IQ &&& GL + HO + IR \\
+  \\
+  \\
+\end{tabular}
+
+Looking at C[0][0], we can see that AJ + BM + CP multiplies the values of row 0 in matrix A with the values of column 0 in matrix B.  For every value in C[i][j], the values in row i of matrix A are multiplied with the values of column j in matrix B.  In order to do matrix multiplication for, we can shift matrices A and B so that the corresponding values are held in the same ape. \par
+First, we must circularly shift each row i of matrix A to the left i times. \par
   
+\begin{tabular}{l*{9}{c}r}
+  \\
+  \\
+  & & & Matrix A \\
+  \\
+  & &
+  \textit{Column 0} &
+  \textit{Column 1} &
+  \textit{Column 2} & \\
+  \\
+  \textit{Row 0} & & A & B & C & // Row 0 shifts 0 times to the left, circularly.\\
+  \\
+  \textit{Row 1} & & D & E & F & // Row 1 shifts 1 times to the left, circularly.\\
+  \\
+  \textit{Row 2} & & G & H & I & // Row 2 shifts 2 times to the left, circularly.\\
+  \\
+  \\
+\end{tabular}
+
+Second, we must circularly shift each column j of matrix B upwards j times. \par
+
+\begin{tabular}{l*{9}{c}r}
+  \\
+  \\
+  & & & Matrix B \\
+  \\
+  & &
+  \textit{Column 0} &
+  \textit{Column 1} &
+  \textit{Column 2} & \\
+  \\
+  \textit{Row 0} & & J & N & R & // Column 0 shifts upwards 0 times, circularly.\\
+  \\
+  \textit{Row 1} & & M & Q & L & // Column 1 shifts upwards 1 times, circularly.\\
+  \\
+  \textit{Row 2} & & P & K & O & // Column 2 shifts upwards 2 times, circularly.\\
+  \\
+  \\
+\end{tabular}
+
+At this point, each ape holds a pair of values from matrix A and matrix B that will be multiplied together to create matrix C.  Below are the bolded pairs that are currently held by each ape. \par
+
+\begin{tabular}{l*{11}{c}r}
+  \\
+  \\
+  && && Matrix C \\
+  \\
+  & &
+  \textit{Column 0} &&
+  \textit{Column 1} &&
+  \textit{Column 2} \\
+  \\
+  \textit{Row 0} && \textbf{AJ} + BM + CP && AK + \textbf{BN} + CQ && AL + BO + \textbf{CR} \\
+  \\
+  \textit{Row 1} && DJ + \textbf{EM} + FP && DK + EN + \textbf{FQ} && \textbf{DL} + EO + FR \\
+  \\
+  \textit{Row 2} && GJ + HM + \textbf{IP} && \textbf{GK} + HN + IQ && GL + \textbf{HO} + IR \\
+  \\
+  \\
+\end{tabular}
+
+Each ape must now multiply their value of matrix A and their value of matrix B and then store the result in what will become matrix C. \par
+    The values in matrix A are now circularly shifted left once and the values in matrix B are circularly shifted upwards once.  This will, again, make it so that every ape holds a pair of corresponding matrix A and matrix B values that must be multiplied together. \par
 
 \end{document}

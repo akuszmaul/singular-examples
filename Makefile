@@ -5,10 +5,10 @@ SINGULAR_CFLAGS = -O1 # cannot handle -Wall
 CPPFLAGS = -I..
 default: matrixMultiplication simpleMat mm.pdf
 
-mm.pdf: mm.tex mm-main.c mm-emitCopyMatrixFromCUToApes.c mm-emitCopyMatrixFromApesToCU.c
+mm.pdf: mm.tex mm-main.c mm-emitCopyMatrixFromCUToApes.c mm-emitCopyMatrixFromApesToCU.c mm-emitMatrixMul.c mm-tests.c mm-check.c mm-copyAFromCU.c mm-copyBToCU.c mm-emitGetTorus.c
 	pdflatex -shell-escape mm
 
-matrixMultiplication: matrixMultiplication.c mm-main.c mm-emitCopyMatrixFromCUToApes.c mm-emitCopyMatrixFromApesToCU.c
+matrixMultiplication: matrixMultiplication.c mm-main.c mm-emitCopyMatrixFromCUToApes.c mm-emitCopyMatrixFromApesToCU.c mm-emitMatrixMul.c mm-tests.c mm-check.c mm-copyAFromCU.c mm-copyBToCU.c mm-emitGetTorus.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(LDLIBS) -o $@
 
 matrixMultiplication simpleMat: libsingular.a

@@ -178,6 +178,14 @@ Next, let’s look at emitCopyMatrixFromApesToCU(int apeAddress, int cuAddress),
 
 \inputminted{c}{mm-emitCopyMatrixFromApesToCU.c}
 
+Next, let’s look at the code that copies matrix B from the CPU into the CU: \par
+
+\inputminted{c}{mm-copyBToCU.c}
+
+In order to copy matrix A from the CU into the CPU, we must use a similar function to copyBToCU.  Next, let’s look at copyAFromCU: \par
+
+\inputminted{c}{mm-copyAFromCU.c}
+
 We’re getting close to the actual matrix multiplication function.  Let’s just take a quick glance at the emitGetTorus function first.  This function allows us to specify an ape variable (such as matrix A) and a direction (such as South).  In that example, every ape is directed to replace their own matrix A value with the value of matrix A from the ape South of them.  The bottom row of apes will circularly take the value from the top row.  There is an apeGet function in that works almost the same, only it does not allow for a torus configuration.  If apeGet is used and given the direction South, the bottom row of apes will all reach off the grid and come back with zeros, instead of the values in the top row.
 
 \inputminted{c}{mm-emitGetTorus.c}
@@ -449,5 +457,256 @@ So, in order to complete a matrix multiplication with the ape network, there are
 \item Repeat steps 3 and 4 N times, where N is equal to the length of the square matrices A and B.
 \end{enumerate}
 First let’s look at Step 1 (number the apes into rows and columns): \par
+
+\begin{minted}{c}
+  // Create variables in each ape for the ape’s row and column numbers.
+// Set row and column to zero initially.
+DeclareApeVar(row, Int);
+DeclareApeVar(col, Int);
+Set(row,IntConst(0));
+Set(col,IntConst(0));
+
+// We must number the row and column variables, because right now they are 
+// all set to zero.
+for (i = 0; i < N; i++){
+// Using apeGet from the North will give us a zero in the top row of apes, since
+// apeGet does not use a torus configuration.
+eApeC(apeGet, row, row, getNorth);
+Set(row, Add(row,IntConst(1)));
+
+// Using apeGet from the West will give us a zero in the left-most column of
+// apes, since apeGet does not use a torus configuration.
+eApeC(apeGet, col, col, getWest);
+Set(col, Add(col,IntConst(1)));
+}
+
+// We added one too many IntConst(1)s, because we still want the extra shift in the for loop.
+// It’s easier to subtract IntConst(1) than to do another shift after the for loop.  Now we
+// subtract IntConst(1).
+Set(row, Sub(row,IntConst(1)));     // Sub() is a subtraction function found in scNova.h
+Set(col, Sub(col,IntConst(1)));
+
+// End Step 1.
+\end{minted}
+
+In order to check that the row and column numbers are correct, we can just add two lines of code: \par
+
+\begin{minted}{c}
+  TraceOneRegisterAllApes(row);
+  TraceOneRegisterAllApes(col);
+\end{minted}
+
+These commands will print out the row and column numbers of each ape.  If everything worked correctly, we’d expect to see the row number for the first 8 apes equal 0; the row number for the next 8 apes equal 1, etc.  TraceOneRegisterAllApes() doesn’t print 0 values though, so the 0th row of all zeros won’t print.  Likewise, the 0th column of all zeros won’t print. \par
+Now, let’s look at step 2 (the initial shifting of the matrices): \par
+
+\begin{minted}{c}
+  // Need to use Ape variables to manipulate matrices A and B.
+DeclareApeVar(Aloaded, Approx);
+Set(Aloaded, A); // Aloaded will hold the same values as matrix A.
+DeclareApeVar(Bloaded, Approx);
+Set(Bloaded, B); // Bloaded will hold the same values as matrix B.
+
+// Shift each row i of matrix A to the left i times.  
+// Shift each column j of matrix B upwards j times.
+for (i = 0; i < N; i++){
+
+// The Aloaded matrix is the same as matrix A.  Shift every Aloaded value to the left
+// by one position. 
+        emitGetTorus(Aloaded, getEast);
+
+    // Check whether the row number of each ape is greater than i.
+    // This masks the other rows.
+        ApeIf(Gt(row, IntConst(i)));
+        // If the row number is greater than i, then we want the matrix A value in that
+        // row to shift to the left by one position.  This is easily done by setting the
+        // non-masked values of matrix A to equal the corresponding values of
+        // Aloaded, which we already shifted.
+                 Set(A, Aloaded);
+        ApeFi(); // Clear the masking.
+        
+    // The Bloaded matrix is the same as matrix B.  Shift every Bloaded value upwards by
+    // one position.
+        emitGetTorus(Bloaded, getSouth);
+
+    // Check whether the column number of each ape is greater than i.
+    // This will mask apes in smaller columns.
+        ApeIf(Gt(col, IntConst(i)));
+        // If the  column number is greater than i, then we want to shift the matrix B
+        // values in that column upwards by one position.  We do this by setting the
+        // non-masked values of matrix B to equal the corresponding values of
+        // Bloaded, which we already shifted.
+                 Set(B, Bloaded);
+        ApeFi(); // Clear the masking from ApeIf().
+        
+} // Ends for(i=0; i < N; i++).
+\end{minted}
+
+In order to check that this shifting is happening in the way that we expect, we can add TraceOneRegisterAllApes(A); and TraceOneRegisterAllApes(B); inside the for loop.  Each time through, we will see the shifts in the positions of the A and B matrices.  \par
+Printing out the entire A and B matrices each time through the for loop provides us with a lot of data to look at.  Huge blocks of data can be difficult to read, so I first wanted to just look at a small section of that data.  Before I looked at the entire matrices, I added TraceOneRegisterOneApe(A, 3, 5) and TraceOneRegisterOneApe(A, 3, 6).  This only printed out the matrix A value in the ape at coordinates (3,5) and (3,6).  I could’ve used any adjacent coordinates; I just wanted an easy way to see quickly whether the shifting was happening as I expected.  By seeing that the value in (3,6) was shifting over to (3,5), I verified that my code was working for at least some of matrix A.  I did the same for matrix B with coordinates that were one on top of the other, to make sure upwards shifting was happening.  Having confirmed that these small sections of the matrix were shifting properly, I then printed out the entire matrices with TraceOneRegisterAllApes(). \par
+Next, let’s look at steps 3, 4, and 5.  Because step 5 is a loop of steps 3 and 4, it’s easier to look at these three steps together.  Step 3 is the multiplication of the matrix A and matrix B value within each ape, and step 4 is the shifting of the matrices by one position. \par
+
+\begin{minted}{c}
+  // emitGetTorus won’t allow us to get values directly from matrix A or matrix B.  In order to
+// use emitGetTorus we need to use a level of misdirection and use the ape variables
+// Aloaded and Bloaded.  First, we reset Aloaded and Bloaded to equal matrix A and matrix
+// B.
+Set(Aloaded, A);
+Set(Bloaded, B);
+ 
+// We want a variable in each ape that holds the running total of the matrix multiplication.
+DeclareApeVar(runningTotal, Approx);
+Set(runningTotal,ApproxConst(0)); // The running total is initially set to zero.
+
+i = 0;
+
+// Multiplies the Aloaded and Bloaded elements in each Ape and adds the result to the
+// running total.  Then shifts Aloaded to the left and Bloaded upwards by one position. 
+// Repeats this N times.  When this loop is finished, the running total will hold the result of
+// the matrix multiplication.
+do {
+            // runningTotal = runningTotal + (Aloaded * Bloaded)
+        Set(runningTotal, Add(runningTotal, Mul(Aloaded, Bloaded)));
+
+        emitGetTorus(Aloaded, getEast); // Shifts Aloaded to the left.
+        emitGetTorus(Bloaded, getSouth); // Shifts Bloaded upwards.
+
+        i++;
+} while(i < N);
+
+// Resets matrix B to what it was before the multiplication, since we didn’t want this function
+// to alter matrix B.
+Set(B, Bsaved);
+// Sets matrix A equal to the runningTotal.  Matrix A now will hold the result of matrix A * B.
+Set(A, runningTotal);
+\end{minted}
+
+In order to check that steps 3, 4, and 5 are working as planned, we can add TraceOneRegisterOneApe and TraceOneRegisterAllApes functions (looking at the running total, Aloaded, and Bloaded variables) within the do-while loop.  This allows us to see the multiplication as it happens.  At the end of the multiplication, we can print out the entire A and B matrices, to make sure they’re equal to the multiplication result (A) and original values (B). \par
+That completes the matrix multiplication function.  Below is the complete function: \par
+
+\inputminted{c}{mm-emitMatrixMul.c}
+
+Now we’ve created all the emit functions.  These functions still need to be loaded into a kernel and ran.  Our test function will do this.  Additionally, our test function will check to see whether our emitMatrixMul function is working. \par 
+    First, the test function needs to load the instructions necessary to set our matrices A and B to the desired values.  Next, test will load the instruction to multiply the matrices.  Then, test will load the instruction to copy matrix A from the Apes back to the CU.  Test can then prepare to check matrix A against test’s calculation of what matrix A should be. Once all of these instructions have been loaded into the kernel, the kernel can be executed, and the Ape matrix multiplication will run. \par
+
+    \inputminted{c}{mm-tests.c}
+
+    Finally, the last function to look at is the check() function, which we use inside tests() in order to compare the correct matrix multiplication results against the results emitMatrixMul gave us.  If the difference is smaller than .02, we conclude that emitMatrixMul gave us the correct result.  Remember, emitMatrixMul won’t give us the exact result, because Apes use approximate variables rather than floats or ints. \par
+
+    \inputminted{c}{mm-check.c}
+
+    Now that we’ve looked at every section of the program, below is the full piece of code: \par
+
+    \begin{minted}{c}
+      /*********************************************************************************
+    (c) Copyright 2011-2016 Singular Computing LLC
+
+    This file and related materials are Confidential Information
+    and Proprietary Property of Singular Computing LLC.
+
+**********************************************************************************/
+
+
+/*
+
+  Simple matrix multiplication example code for S1 using Nova.
+
+  To compile: 
+  gcc -lm -o matrixMultiplication matrixMultiplication.c scNova.c scAcceleratorAPI.c scEmulator.c scArithmetic178.c pmbus.c
+
+
+  We keep a matrix (A) stored persistently in the S1,
+  and multiply it with a temporary matrix (B), storing the result in A.
+
+  For this code, A and B have fixed, identical, square NxN shapes, where N=8.
+  Matrix elements are stored one per core.
+
+*/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <time.h>
+
+// Include the Singular Software libraries.
+#include "scAcceleratorAPI.h"
+#include "scNova.h"
+
+
+int emulated; // 1 for emulated machine.  0 for real S1 hardware.
+
+// If emulated, scTotalCyclesTake is the total number of cycles
+// taken to run the last kernel.
+extern int scTotalCyclesTaken;
+
+// If emulated, *scEmulatedMachineState is a pointer to the
+// emulated machine's state.
+extern MachineState *scEmulatedMachineState;  
+
+extern LLKernel *llKernel;
+
+// Variables for the size info of the machine.
+int chipRows;
+int chipCols;
+int apeRows;
+int apeCols;
+
+int traceFlags;
+
+// Define the length of the square matrices.
+#define N 8
+
+// Declare space for matrices A and B on the CPU, in float format.
+float floatA[N][N];
+float floatB[N][N];
+
+// Declare space for a matrix on the CPU, in approx format (16 bits),
+// aligned at 64 bits.
+uint64_t approxM[(N*N)/4];
+
+// Declare often used Nova Constants.
+Declare(a0);
+Declare(a1);
+
+// Declare names of A and B matrices in Ape memory.
+Declare(A);
+Declare(B);
+
+void defineNames () {
+// Initialization routine to define the names above.
+    a0 = AConst(0);
+    a1 = AConst(1);
+    ApeMem(A, Approx);
+    ApeMem(B, Approx);
+}
+
+    \end{minted}
+    \inputminted{c}{mm-emitCopyMatrixFromCUToApes.c}
+    \inputminted{c}{mm-emitCopyMatrixFromApesToCU.c}
+    \inputminted{c}{mm-copyBFromCU.c}
+    \inputminted{c}{mm-copyAFromCU.c}
+
+    \begin{minted}{c}
+void emitMatrixSet () {
+    Set(A, B);
+}
+\end{minted}
+
+    \inputminted{c}{mm-emitGetTorus.c}
+    \inputminted{c}{mm-emitMatrixMul.c}
+\inputminted{c}{mm-check.c}
+\inputminted{c}{mm-tests.c}
+\inputminted{c}{mm-main.c}
+
+    TODO: \begin{enumerate}
+    \item Load the matrix with more interesting numbers than all zeros.
+    \item Put in information about TraceFlags.
+    \item Ask Joe about what DDR and randomize do in initmachine.
+    \item Ask Joe - go through emitCopyMatrixFrom and To code.
+    \item Ask Joe - emitGetTorus not fully understood.
+    \end{enumerate}
 
 \end{document}

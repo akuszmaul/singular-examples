@@ -246,9 +246,9 @@ First, we must circularly shift each row i of matrix A to the left i times. \par
   \\
   \textit{Row 0} & & A & B & C & // Row 0 shifts 0 times to the left, circularly.\\
   \\
-  \textit{Row 1} & & D & E & F & // Row 1 shifts 1 times to the left, circularly.\\
+  \textit{Row 1} & & E & F & D & // Row 1 shifts 1 times to the left, circularly.\\
   \\
-  \textit{Row 2} & & G & H & I & // Row 2 shifts 2 times to the left, circularly.\\
+  \textit{Row 2} & & I & G & H & // Row 2 shifts 2 times to the left, circularly.\\
   \\
   \\
 \end{tabular}
@@ -296,6 +296,158 @@ At this point, each ape holds a pair of values from matrix A and matrix B that w
 \end{tabular}
 
 Each ape must now multiply their value of matrix A and their value of matrix B and then store the result in what will become matrix C. \par
-    The values in matrix A are now circularly shifted left once and the values in matrix B are circularly shifted upwards once.  This will, again, make it so that every ape holds a pair of corresponding matrix A and matrix B values that must be multiplied together. \par
+The values in matrix A are now circularly shifted left once and the values in matrix B are circularly shifted upwards once.  This will, again, make it so that every ape holds a pair of corresponding matrix A and matrix B values that must be multiplied together. \par
+
+\begin{tabular}{l*{9}{c}r}
+  \\
+  \\
+  & & & Matrix A \\
+  \\
+  & &
+  \textit{Column 0} &
+  \textit{Column 1} &
+  \textit{Column 2} & \\
+  \\
+  \textit{Row 0} & & B & C & A && // Shift each value to the left once (circularly).\\
+  \\
+  \textit{Row 1} & & F & D & E \\
+  \\
+  \textit{Row 2} & & G & H & I \\
+  \\
+  \\
+\end{tabular}
+
+\begin{tabular}{l*{9}{c}r}
+  \\
+  \\
+  & & & Matrix B \\
+  \\
+  & &
+  \textit{Column 0} &
+  \textit{Column 1} &
+  \textit{Column 2} & \\
+  \\
+  \textit{Row 0} & & M & Q & L && // Shift each value upwards once (circularly).\\
+  \\
+  \textit{Row 1} & & P & K & O \\
+  \\
+  \textit{Row 2} & & J & N & R \\
+  \\
+  \\
+\end{tabular}
+
+Below are the bolded pairs that are now held by each ape.  They haven't yet been multiplied together and put into matrix C, which will be the next step.\par
+
+\begin{tabular}{l*{11}{c}r}
+  \\
+  \\
+  && && Matrix C \\
+  \\
+  & &
+  \textit{Column 0} &&
+  \textit{Column 1} &&
+  \textit{Column 2} \\
+  \\
+  \textit{Row 0} && AJ + \textbf{BM} + CP && AK + BN + \textbf{CQ} && \textbf{AL} + BO + CR \\
+  \\
+  \textit{Row 1} && DJ + EM + \textbf{FP} && \textbf{DK} + EN + FQ && DL + \textbf{EO} + FR \\
+  \\
+  \textit{Row 2} && \textbf{GJ} + HM + IP && GK + \textbf{HN} + IQ && GL + HO + \textbf{IR} \\
+  \\
+  \\
+\end{tabular}
+
+Each ape must now multiply their value of matrix A and their value of matrix B and then add the result to matrix C.  Matrix C now holds the sum of this and the previous multiplication (bolded below). \par
+
+\begin{tabular}{l*{11}{c}r}
+  \\
+  \\
+  && && Matrix C \\
+  \\
+  & &
+  \textit{Column 0} &&
+  \textit{Column 1} &&
+  \textit{Column 2} \\
+  \\
+  \textit{Row 0} && \textbf{AJ + BM} + CP && AK + \textbf{BN + CQ} && \textbf{AL} + BO + \textbf{CR} \\
+  \\
+  \textit{Row 1} && DJ + \textbf{EM + FP} && \textbf{DK} + EN + \textbf{FQ} && \textbf{DL + EO} + FR \\
+  \\
+  \textit{Row 2} && \textbf{GJ} + HM + \textbf{IP} && \textbf{GK + HN} + IQ && GL + \textbf{HO + IR} \\
+  \\
+  \\
+\end{tabular}
+
+Now matrix C just needs the non-bolded values in the chart above.  We can copy the previous step, shifting matrix A to the left by 1 and shifting matrix B upwards by 1, in order to get the last pair of corresponding values from each matrix. \par
+
+\begin{tabular}{l*{9}{c}r}
+  \\
+  \\
+  & & & Matrix A \\
+  \\
+  & &
+  \textit{Column 0} &
+  \textit{Column 1} &
+  \textit{Column 2} & \\
+  \\
+  \textit{Row 0} & & C & A & B && // Shift each value to the left once (circularly).\\
+  \\
+  \textit{Row 1} & & D & E & F \\
+  \\
+  \textit{Row 2} & & H & I & G \\
+  \\
+  \\
+\end{tabular}
+
+\begin{tabular}{l*{9}{c}r}
+  \\
+  \\
+  & & & Matrix B \\
+  \\
+  & &
+  \textit{Column 0} &
+  \textit{Column 1} &
+  \textit{Column 2} & \\
+  \\
+  \textit{Row 0} & & P & K & O && // Shift each value upwards once (circularly).\\
+  \\
+  \textit{Row 1} & & J & N & R \\
+  \\
+  \textit{Row 2} & & M & Q & L \\
+  \\
+  \\
+\end{tabular}
+
+Below are the bolded pairs that are now held by each ape. \par
+
+\begin{tabular}{l*{11}{c}r}
+  \\
+  \\
+  && && Matrix C \\
+  \\
+  & &
+  \textit{Column 0} &&
+  \textit{Column 1} &&
+  \textit{Column 2} \\
+  \\
+  \textit{Row 0} && AJ + BM + \textbf{CP} && \textbf{AK} + BN + CQ && AL + \textbf{BO} + CR \\
+  \\
+  \textit{Row 1} && \textbf{DJ} + EM + FP && DK + \textbf{EN} + FQ && DL + EO + \textbf{FR} \\
+  \\
+  \textit{Row 2} && GJ + \textbf{HM} + IP && GK + HN + \textbf{IQ} && \textbf{GL} + HO + IR \\
+  \\
+  \\
+\end{tabular}
+
+We can see that the bolded pairs above are the same as the non-bolded pairs from the previous matrix C chart.  When these values are multiplied and added to matrix C, we will have finished multiplying matrix A and matrix B. \par
+So, in order to complete a matrix multiplication with the ape network, there are 5 steps: \par
+\begin{enumerate}
+\item Number the apes into rows and columns.
+\item Do the initial shifting of matrix A and matrix B.  Each row i of matrix A shift move to the left i times.  Each column j of matrix B must shift upwards j times.
+\item Multiply the matrix A and matrix B values within each ape and add the result to a running total.
+\item Shift matrix A to the left by one.  Shift matrix B upwards by one. \par
+\item Repeat steps 3 and 4 N times, where N is equal to the length of the square matrices A and B.
+\end{enumerate}
+First let’s look at Step 1 (number the apes into rows and columns): \par
 
 \end{document}
